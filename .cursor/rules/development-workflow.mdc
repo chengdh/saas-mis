@@ -1,0 +1,43 @@
+---
+description: 与代码生成有关的工作时，请遵循此规则
+globs: 
+alwaysApply: false
+---
+# Development Workflow Guide
+
+## Local Development Setup
+1. 确保安装了必要的开发工具：
+   - Node.js >= 18.0.0
+   - npm >= 9.0.0
+   - Docker >= 24.0.0
+   - Docker Compose >= 2.0.0
+
+2. 启动开发环境：
+   ```bash
+   docker-compose up
+   ```
+
+3. 访问开发服务器：
+   - 前端应用：http://localhost:3000
+   - 开发工具：Chrome DevTools + Vue.js devtools
+
+## Code Organization
+- 组件命名：使用 PascalCase（如 `UserProfile.vue`）
+- 工具函数：使用 camelCase（如 `formatDate.ts`）
+- 类型定义：使用 PascalCase（如 `UserType.ts`）
+
+## Development Practices
+1. 代码风格：
+   - 使用 ESLint 进行代码检查
+   - 使用 Prettier 进行代码格式化
+   - 遵循 TypeScript 严格模式
+
+2. 调试方法：
+   - 使用 Chrome DevTools 进行前端调试
+   - 使用 Vue.js devtools 进行组件调试
+   - 使用 sourcemap 进行源码映射
+
+3. 环境变量：
+   - 开发环境：`.env.development`
+   - 测试环境：`.env.test`
+   - 生产环境：`.env.production`

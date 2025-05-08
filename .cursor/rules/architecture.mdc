@@ -1,0 +1,40 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Architecture Guide
+
+## System Overview
+- 基于 Pure Admin 精简版的前端框架
+- 使用 Supabase 作为后端服务
+- 采用多租户架构设计
+
+## Key Components
+1. 前端架构：
+   - Vue 3 + TypeScript
+   - Pinia 状态管理
+   - Vue Router 路由管理
+   - Element Plus UI 组件库
+
+2. 后端服务：
+   - Supabase Auth：用户认证
+   - Supabase Database：数据存储
+   - Supabase Storage：文件存储
+   - Supabase Edge Functions：服务端函数
+
+3. 数据隔离：
+   - 使用 Supabase RLS 实现租户数据隔离
+   - 基于 JWT 的租户身份验证
+   - 行级安全策略控制
+
+## Security Considerations
+1. 认证与授权：
+   - 基于 Supabase Auth 的用户认证
+   - JWT 令牌管理
+   - 角色基础的访问控制
+
+2. 数据安全：
+   - 租户数据严格隔离
+   - 敏感数据加密存储
+   - 安全的 API 访问控制

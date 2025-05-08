@@ -1,0 +1,31 @@
+---
+description: 本规则描述了项目的目录结构，配置文件，文档位置及基础的开发环境要求
+globs: 
+alwaysApply: false
+---
+# Project Structure Guide
+
+## Core Directories
+- `src/` - 前端源代码目录
+  - `components/` - Vue 组件
+  - `views/` - 页面视图
+  - `store/` - Pinia 状态管理
+  - `utils/` - 工具函数
+  - `api/` - API 接口
+  - `types/` - TypeScript 类型定义
+
+## Configuration Files
+- `vite.config.ts` - Vite 构建配置
+- `tsconfig.json` - TypeScript 配置
+- `docker-compose.yml` - Docker 开发环境配置
+- `.env.*` - 环境变量配置
+
+## Documentation
+- `docs/` - 项目文档目录
+  - `epic1.md` - 系统基础架构文档
+  - `templates/` - 文档模板
+
+## Development Environment
+- 使用 Docker 进行开发环境隔离
+- 使用 Pure Admin 精简版作为前端框架
+- 使用 Supabase 作为后端服务
