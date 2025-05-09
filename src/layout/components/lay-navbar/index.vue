@@ -6,9 +6,12 @@ import LayNavMix from "../lay-sidebar/NavMix.vue";
 import LaySidebarFullScreen from "../lay-sidebar/components/SidebarFullScreen.vue";
 import LaySidebarBreadCrumb from "../lay-sidebar/components/SidebarBreadCrumb.vue";
 import LaySidebarTopCollapse from "../lay-sidebar/components/SidebarTopCollapse.vue";
+import { useTenantStoreHook } from "@/store/modules/tenant";
+import { onMounted } from "vue";
 
 import LogoutCircleRLine from "~icons/ri/logout-circle-r-line";
 import Setting from "~icons/ri/settings-3-line";
+import Building from "~icons/ri/building-line";
 
 const {
   layout,
@@ -21,6 +24,18 @@ const {
   avatarsStyle,
   toggleSideBar
 } = useNav();
+
+const tenantStore = useTenantStoreHook();
+
+// Load tenants when component is mounted
+onMounted(() => {
+  tenantStore.fetchTenants();
+});
+
+// Function to switch tenant
+const switchTenant = (tenantId: string) => {
+  tenantStore.setCurrentTenant(tenantId);
+};
 </script>
 
 <template>
@@ -46,6 +61,31 @@ const {
       <LaySidebarFullScreen id="full-screen" />
       <!-- 消息通知 -->
       <LayNotice id="header-notice" />
+
+      <!-- 租户切换器 -->
+      <el-dropdown trigger="click" class="tenant-switcher">
+        <span class="el-dropdown-link navbar-bg-hover select-none">
+          <IconifyIconOffline :icon="Building" style="margin-right: 5px" />
+          <p class="tenant-name dark:text-white">
+            {{ tenantStore.getCurrentTenant.name }}
+          </p>
+        </span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="tenant in tenantStore.tenants"
+              :key="tenant.id"
+              :class="{
+                'active-tenant': tenant.id === tenantStore.currentTenantId
+              }"
+              @click="switchTenant(tenant.id)"
+            >
+              {{ tenant.name }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="el-dropdown-link navbar-bg-hover select-none">
@@ -115,6 +155,17 @@ const {
         border-radius: 50%;
       }
     }
+
+    .tenant-switcher {
+      margin-right: 8px;
+
+      .tenant-name {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
   }
 
   .breadcrumb-container {
@@ -131,5 +182,10 @@ const {
     flex-wrap: wrap;
     min-width: 100%;
   }
+}
+
+:deep(.active-tenant) {
+  color: var(--el-color-primary);
+  font-weight: bold;
 }
 </style>
