@@ -28,6 +28,16 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
       // 预热文件以提前转换和缓存结果，降低启动期间的初始页面加载时长并防止转换瀑布
       warmup: {
         clientFiles: ["./index.html", "./src/{views,components}/*"]
+      },
+      // Docker中的HMR配置
+      watch: {
+        usePolling: true, // 在Docker中HMR所必需
+        interval: 1000
+      },
+      hmr: {
+        host: 'localhost', // 如果'localhost'无法从浏览器正确解析到容器，则为Docker主机IP
+        port: 3000,
+        protocol: 'ws'
       }
     },
     plugins: getPluginsList(VITE_CDN, VITE_COMPRESSION),
@@ -36,10 +46,13 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
       include,
       exclude
     },
+    css: {
+      devSourcemap: true // 开发环境的CSS sourcemap
+    },
     build: {
       // https://cn.vitejs.dev/guide/build.html#browser-compatibility
       target: "es2015",
-      sourcemap: false,
+      sourcemap: true, // 生产构建也启用sourcemap
       // 消除打包大小超过500kb警告
       chunkSizeWarningLimit: 4000,
       rollupOptions: {

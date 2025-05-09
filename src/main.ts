@@ -24,6 +24,11 @@ import "./assets/iconfont/iconfont.css";
 
 const app = createApp(App);
 
+// 开发环境启用Vue性能监控
+if (import.meta.env.DEV) {
+  app.config.performance = true;
+}
+
 // 自定义指令
 import * as directives from "@/directives";
 Object.keys(directives).forEach(key => {

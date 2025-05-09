@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - VITE_HMR_HOST=localhost
+      - VITE_HMR_PORT=3000
+      - CHOKIDAR_USEPOLLING=true
+    command: pnpm dev 
