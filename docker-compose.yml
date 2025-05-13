@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 services:
   app:
     build:
@@ -12,5 +12,33 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_HMR_HOST=localhost
-      - VITE_HMR_PORT=3000
-      - CHOKIDAR_USEPOLLING=true 
+      - VITE_HMR_PORT=8848
+      - CHOKIDAR_USEPOLLING=true
+
+  # 添加一个专门用于运行命令的服务，如添加依赖等
+  npm:
+    image: node:latest
+    volumes:
+      - .:/app
+      - npm_cache:/root/.npm
+    working_dir: /app
+    entrypoint: ["npm"]
+    profiles:
+      - tools
+
+  # 添加Supabase CLI服务
+  supabase-cli:
+    image: docker.mybacc.com/michaeltaylor3d/supabase-cli:latest
+    volumes:
+      - .:/workdir
+    working_dir: /workdir
+    environment:
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN:-}
+    # 使容器保持运行，但不消耗资源
+    command: tail -f /dev/null
+    # 共享宿主网络以便访问本地数据库
+    network_mode: "host"
+
+volumes:
+  npm_cache:
+    name: npm-cache
