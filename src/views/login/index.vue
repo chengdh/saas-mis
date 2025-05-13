@@ -10,6 +10,7 @@ import { useEventListener } from "@vueuse/core";
 import type { FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
+import { useAuthStoreHook } from "@/stores/auth";
 import { initRouter, getTopMenu } from "@/router/utils";
 import { bg, avatar, illustration } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
@@ -28,6 +29,8 @@ const router = useRouter();
 const loading = ref(false);
 const disabled = ref(false);
 const ruleFormRef = ref<FormInstance>();
+const authStore = useAuthStoreHook();
+const rememberMe = ref(false);
 
 const { initStorage } = useLayout();
 initStorage();
@@ -37,8 +40,8 @@ dataThemeChange(overallStyle.value);
 const { title } = useNav();
 
 const ruleForm = reactive({
-  username: "admin",
-  password: "admin123"
+  email: "",
+  password: ""
 });
 
 const onLogin = async (formEl: FormInstance | undefined) => {
@@ -46,28 +49,32 @@ const onLogin = async (formEl: FormInstance | undefined) => {
   await formEl.validate(valid => {
     if (valid) {
       loading.value = true;
-      useUserStoreHook()
-        .loginByUsername({
-          username: ruleForm.username,
-          password: ruleForm.password
-        })
-        .then(res => {
-          if (res.success) {
-            // 获取后端路由
-            return initRouter().then(() => {
-              disabled.value = true;
-              router
-                .push(getTopMenu(true).path)
-                .then(() => {
-                  message("登录成功", { type: "success" });
-                })
-                .finally(() => (disabled.value = false));
-            });
-          } else {
-            message("登录失败", { type: "error" });
+      
+      authStore.signIn(ruleForm.email, ruleForm.password)
+        .then(({ success, error }) => {
+          if (!success && error) {
+            message(error.message || "登录失败", { type: "error" });
+            return;
           }
+          
+          // 获取后端路由
+          return initRouter().then(() => {
+            disabled.value = true;
+            router
+              .push(getTopMenu(true).path)
+              .then(() => {
+                message("登录成功", { type: "success" });
+              })
+              .finally(() => (disabled.value = false));
+          });
         })
-        .finally(() => (loading.value = false));
+        .catch(err => {
+          console.error("登录错误:", err);
+          message("登录失败，请稍后重试", { type: "error" });
+        })
+        .finally(() => {
+          loading.value = false;
+        });
     }
   });
 };
@@ -123,16 +130,21 @@ useEventListener(document, "keydown", ({ code }) => {
                 :rules="[
                   {
                     required: true,
-                    message: '请输入账号',
+                    message: '请输入邮箱',
+                    trigger: 'blur'
+                  },
+                  {
+                    type: 'email',
+                    message: '请输入有效的邮箱地址',
                     trigger: 'blur'
                   }
                 ]"
-                prop="username"
+                prop="email"
               >
                 <el-input
-                  v-model="ruleForm.username"
+                  v-model="ruleForm.email"
                   clearable
-                  placeholder="账号"
+                  placeholder="邮箱"
                   :prefix-icon="useRenderIcon(User)"
                 />
               </el-form-item>
@@ -149,6 +161,13 @@ useEventListener(document, "keydown", ({ code }) => {
                 />
               </el-form-item>
             </Motion>
+            
+            <Motion :delay="200">
+              <div class="flex justify-between">
+                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                <el-link type="primary" href="#/auth/forgot-password" :underline="false">忘记密码？</el-link>
+              </div>
+            </Motion>
 
             <Motion :delay="250">
               <el-button
@@ -161,6 +180,13 @@ useEventListener(document, "keydown", ({ code }) => {
               >
                 登录
               </el-button>
+            </Motion>
+            
+            <Motion :delay="300">
+              <div class="flex justify-center mt-4">
+                <span class="text-gray-500">还没有账号？</span>
+                <el-link type="primary" href="#/auth/register" :underline="false" class="ml-1">立即注册</el-link>
+              </div>
             </Motion>
           </el-form>
         </div>
