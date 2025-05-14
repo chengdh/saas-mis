@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { getTopMenu } from "@/router/utils";
 import { useNav } from "@/layout/hooks/useNav";
+import { computed } from "vue";
 
 defineProps({
   collapse: Boolean
 });
 
 const { title, getLogo } = useNav();
+
+const defaultPath = computed(() => {
+  const topMenu = getTopMenu();
+  return topMenu?.path || "/";
+});
 </script>
 
 <template>
@@ -17,7 +23,7 @@ const { title, getLogo } = useNav();
         key="collapse"
         :title="title"
         class="sidebar-logo-link"
-        :to="getTopMenu()?.path ?? '/'"
+        :to="defaultPath"
       >
         <img :src="getLogo()" alt="logo" />
         <span class="sidebar-title">{{ title }}</span>
@@ -27,7 +33,7 @@ const { title, getLogo } = useNav();
         key="expand"
         :title="title"
         class="sidebar-logo-link"
-        :to="getTopMenu()?.path ?? '/'"
+        :to="defaultPath"
       >
         <img :src="getLogo()" alt="logo" />
         <span class="sidebar-title">{{ title }}</span>

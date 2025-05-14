@@ -4,11 +4,14 @@ import LayFooter from "../lay-footer/index.vue";
 import { useTags } from "@/layout/hooks/useTag";
 import { useGlobal, isNumber } from "@pureadmin/utils";
 import BackTopIcon from "@/assets/svg/back_top.svg?component";
-import { h, computed, Transition, defineComponent } from "vue";
+import { h, computed, Transition, defineComponent, onMounted, ref } from "vue";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 
 const props = defineProps({
-  fixedHeader: Boolean
+  fixedHeader: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const { showModel } = useTags();
@@ -103,6 +106,15 @@ const transitionMain = defineComponent({
     );
   }
 });
+
+const appMainScrollbarExists = ref(false);
+
+onMounted(() => {
+  // 检查目标元素是否存在
+  setTimeout(() => {
+    appMainScrollbarExists.value = !!document.querySelector('.app-main .el-scrollbar__wrap');
+  }, 200);
+});
 </script>
 
 <template>
@@ -116,6 +128,7 @@ const transitionMain = defineComponent({
           <template #default="{ Comp, fullPath, frameInfo }">
             <el-scrollbar
               v-if="fixedHeader"
+              ref="contentScrollbarRef"
               :wrap-style="{
                 display: 'flex',
                 'flex-wrap': 'wrap',
@@ -132,7 +145,6 @@ const transitionMain = defineComponent({
             >
               <el-backtop
                 title="回到顶部"
-                target=".app-main .el-scrollbar__wrap"
               >
                 <BackTopIcon />
               </el-backtop>

@@ -52,20 +52,24 @@ export function setToken(data: DataInfo<Date>) {
   expires = new Date(data.expires).getTime(); // 如果后端直接设置时间戳，将此处代码改为expires = data.expires，然后把上面的DataInfo<Date>改成DataInfo<number>即可
   const cookieString = JSON.stringify({ accessToken, expires, refreshToken });
 
+  // 设置较长的默认过期时间（7天），确保登录状态能够保持
+  const defaultExpires = 7;
+  
   expires > 0
     ? Cookies.set(TokenKey, cookieString, {
-        expires: (expires - Date.now()) / 86400000
+        expires: Math.max((expires - Date.now()) / 86400000, defaultExpires)
       })
-    : Cookies.set(TokenKey, cookieString);
+    : Cookies.set(TokenKey, cookieString, { expires: defaultExpires });
 
+  // 设置多标签页Cookie，默认7天过期
   Cookies.set(
     multipleTabsKey,
     "true",
     isRemembered
       ? {
-          expires: loginDay
+          expires: loginDay || defaultExpires
         }
-      : {}
+      : { expires: defaultExpires }
   );
 
   function setUserKey({ avatar, username, nickname, roles, permissions }) {

@@ -36,6 +36,7 @@ import {
   removeToken,
   multipleTabsKey
 } from "@/utils/auth";
+import { useAuthStoreHook } from "@/stores/auth";
 
 /** 自动导入全部静态路由，无需再手动引入！匹配 src/router/modules 目录（任何嵌套级别）中具有 .ts 扩展名的所有文件，除了 remaining.ts 文件
  * 如何匹配所有文件请看：https://github.com/mrmlnc/fast-glob#basic-syntax
@@ -118,8 +119,10 @@ router.beforeEach((to: ToRouteType, _from, next) => {
       handleAliveRoute(to);
     }
   }
-  const userInfo = storageLocal().getItem<DataInfo<number>>(userKey);
+
+  const authStore = useAuthStoreHook();
   NProgress.start();
+
   const externalLink = isUrl(to?.name as string);
   if (!externalLink) {
     to.matched.some(item => {
@@ -129,13 +132,18 @@ router.beforeEach((to: ToRouteType, _from, next) => {
       else document.title = item.meta.title as string;
     });
   }
+
   /** 如果已经登录并存在登录信息后不能跳转到路由白名单，而是继续保持在当前页面 */
   function toCorrectRoute() {
     whiteList.includes(to.fullPath) ? next(_from.fullPath) : next();
   }
-  if (Cookies.get(multipleTabsKey) && userInfo) {
+
+  if (authStore.isAuthenticated) {
     // 无权限跳转403页面
-    if (to.meta?.roles && !isOneOfArray(to.meta?.roles, userInfo?.roles)) {
+    if (
+      to.meta?.roles &&
+      !isOneOfArray(to.meta?.roles, authStore.user?.user_metadata?.roles || [])
+    ) {
       next({ path: "/error/403" });
     }
     // 开启隐藏首页后在浏览器地址栏手动输入首页welcome路由则跳转到404页面
@@ -184,7 +192,7 @@ router.beforeEach((to: ToRouteType, _from, next) => {
               }
             }
           }
-          // 确保动态路由完全加入路由列表并且不影响静态路由（注意：动态路由刷新时router.beforeEach可能会触发两次，第一次触发动态路由还未完全添加，第二次动态路由才完全添加到路由列表，如果需要在router.beforeEach做一些判断可以在to.name存在的条件下去判断，这样就只会触发一次）
+          // 确保动态路由完全加入路由列表并且不影响静态路由
           if (isAllEmpty(to.name)) router.push(to.fullPath);
         });
       }
@@ -195,7 +203,7 @@ router.beforeEach((to: ToRouteType, _from, next) => {
       if (whiteList.indexOf(to.path) !== -1) {
         next();
       } else {
-        removeToken();
+        authStore.signOut();
         next({ path: "/login" });
       }
     } else {

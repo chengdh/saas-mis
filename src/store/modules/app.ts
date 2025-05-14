@@ -48,7 +48,8 @@ export const useAppStore = defineStore("pure-app", {
     TOGGLE_SIDEBAR(opened?: boolean, resize?: string) {
       const layout = storageLocal().getItem<StorageConfigs>(
         `${responsiveStorageNameSpace()}layout`
-      );
+      ) || {};
+      
       if (opened && resize) {
         this.sidebar.withoutAnimation = true;
         this.sidebar.opened = true;

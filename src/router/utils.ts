@@ -151,6 +151,12 @@ function addPathMatch() {
 
 /** 处理动态路由（后端返回的路由） */
 function handleAsyncRoutes(routeList) {
+  if (!routeList || !Array.isArray(routeList)) {
+    console.warn("Invalid route list:", routeList);
+    usePermissionStoreHook().handleWholeMenus([]);
+    return;
+  }
+
   if (routeList.length === 0) {
     usePermissionStoreHook().handleWholeMenus(routeList);
   } else {
@@ -204,19 +210,41 @@ function initRouter() {
       });
     } else {
       return new Promise(resolve => {
-        getAsyncRoutes().then(({ data }) => {
-          handleAsyncRoutes(cloneDeep(data));
-          storageLocal().setItem(key, data);
-          resolve(router);
-        });
+        getAsyncRoutes()
+          .then(({ data }) => {
+            if (!data) {
+              console.warn("No route data received from API");
+              handleAsyncRoutes([]);
+            } else {
+              handleAsyncRoutes(cloneDeep(data));
+              storageLocal().setItem(key, data);
+            }
+            resolve(router);
+          })
+          .catch(error => {
+            console.error("Failed to fetch routes:", error);
+            handleAsyncRoutes([]);
+            resolve(router);
+          });
       });
     }
   } else {
     return new Promise(resolve => {
-      getAsyncRoutes().then(({ data }) => {
-        handleAsyncRoutes(cloneDeep(data));
-        resolve(router);
-      });
+      getAsyncRoutes()
+        .then(({ data }) => {
+          if (!data) {
+            console.warn("No route data received from API");
+            handleAsyncRoutes([]);
+          } else {
+            handleAsyncRoutes(cloneDeep(data));
+          }
+          resolve(router);
+        })
+        .catch(error => {
+          console.error("Failed to fetch routes:", error);
+          handleAsyncRoutes([]);
+          resolve(router);
+        });
     });
   }
 }
@@ -331,6 +359,12 @@ function addAsyncRoutes(arrRoutes: Array<RouteRecordRaw>) {
 
 /** 获取路由历史模式 https://next.router.vuejs.org/zh/guide/essentials/history-mode.html */
 function getHistoryMode(routerHistory): RouterHistory {
+  // 添加默认值，确保routerHistory不是undefined
+  if (!routerHistory) {
+    console.warn("VITE_ROUTER_HISTORY not set in env, using hash mode by default");
+    return createWebHashHistory("");
+  }
+  
   // len为1 代表只有历史模式 为2 代表历史模式中存在base参数 https://next.router.vuejs.org/zh/api/#%E5%8F%82%E6%95%B0-1
   const historyMode = routerHistory.split(",");
   const leftMode = historyMode[0];
@@ -350,6 +384,9 @@ function getHistoryMode(routerHistory): RouterHistory {
       return createWebHistory(rightMode);
     }
   }
+  
+  // 默认返回hash模式
+  return createWebHashHistory("");
 }
 
 /** 获取当前页面按钮级别的权限 */
@@ -383,10 +420,22 @@ function handleTopMenu(route) {
 
 /** 获取所有菜单中的第一个菜单（顶级菜单）*/
 function getTopMenu(tag = false): menuType {
-  const topMenu = handleTopMenu(
-    usePermissionStoreHook().wholeMenus[0]?.children[0]
-  );
-  tag && useMultiTagsStoreHook().handleTags("push", topMenu);
+  const wholeMenus = usePermissionStoreHook().wholeMenus;
+  if (!wholeMenus || wholeMenus.length === 0) {
+    console.warn("No menus available");
+    return null;
+  }
+
+  const firstMenu = wholeMenus[0];
+  if (!firstMenu || !firstMenu.children || firstMenu.children.length === 0) {
+    console.warn("First menu has no children");
+    return firstMenu || null;
+  }
+
+  const topMenu = handleTopMenu(firstMenu.children[0]);
+  if (tag && topMenu) {
+    useMultiTagsStoreHook().handleTags("push", topMenu);
+  }
   return topMenu;
 }
 

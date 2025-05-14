@@ -1,2 +1,37 @@
 # Private individual user cursor rules
 .cursor/rules/_*.mdc
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+!.env.development
+.env.test
+.env.production
+
+# 编译输出
+dist
+dist-ssr
+*.local
+
+# 日志
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 编辑器目录和文件
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 依赖目录
+node_modules
+.pnpm-store

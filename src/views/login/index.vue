@@ -27,7 +27,6 @@ defineOptions({
 
 const router = useRouter();
 const loading = ref(false);
-const disabled = ref(false);
 const ruleFormRef = ref<FormInstance>();
 const authStore = useAuthStoreHook();
 const rememberMe = ref(false);
@@ -49,28 +48,61 @@ const onLogin = async (formEl: FormInstance | undefined) => {
   await formEl.validate(valid => {
     if (valid) {
       loading.value = true;
-      
-      authStore.signIn(ruleForm.email, ruleForm.password)
+
+      authStore
+        .signIn(ruleForm.email, ruleForm.password, rememberMe.value)
         .then(({ success, error }) => {
           if (!success && error) {
-            message(error.message || "登录失败", { type: "error" });
+            // 更具体的错误信息
+            if (error.message.includes("Invalid login credentials")) {
+              message("邮箱或密码错误", { type: "error" });
+            } else if (error.message.includes("Email not confirmed")) {
+              message("邮箱未验证，请先验证邮箱", { type: "warning" });
+            } else if (error.message.includes("rate limit")) {
+              message("登录尝试次数过多，请稍后再试", { type: "error" });
+            } else if (error.message.includes("User not found")) {
+              message("用户不存在", { type: "error" });
+            } else {
+              message(error.message || "登录失败", { type: "error" });
+            }
             return;
           }
-          
+
           // 获取后端路由
-          return initRouter().then(() => {
-            disabled.value = true;
-            router
-              .push(getTopMenu(true).path)
-              .then(() => {
-                message("登录成功", { type: "success" });
-              })
-              .finally(() => (disabled.value = false));
-          });
+          return initRouter()
+            .then(() => {
+              // 直接导航到欢迎页面
+              return router.push("/");
+            })
+            .then(() => {
+              message("登录成功", { type: "success" });
+            })
+            .catch(error => {
+              console.error("路由处理错误:", error);
+              // 如果导航失败，尝试导航到根路径
+              return router.push("/").catch(err => {
+                console.error("根路径导航也失败:", err);
+              });
+            });
         })
         .catch(err => {
           console.error("登录错误:", err);
-          message("登录失败，请稍后重试", { type: "error" });
+          // 网络错误处理
+          if (!navigator.onLine) {
+            message("网络连接失败，请检查网络设置", { type: "error" });
+          } else if (
+            err.name === "NetworkError" ||
+            err.message?.includes("network")
+          ) {
+            message("网络连接失败，请检查网络设置", { type: "error" });
+          } else if (
+            err.name === "TimeoutError" ||
+            err.message?.includes("timeout")
+          ) {
+            message("请求超时，请稍后重试", { type: "error" });
+          } else {
+            message("登录失败，请稍后重试", { type: "error" });
+          }
         })
         .finally(() => {
           loading.value = false;
@@ -79,20 +111,26 @@ const onLogin = async (formEl: FormInstance | undefined) => {
   });
 };
 
-const immediateDebounce: any = debounce(
-  formRef => onLogin(formRef),
+const immediateDebounce = debounce(
+  (formRef: FormInstance | undefined) => onLogin(formRef),
   1000,
   true
 );
 
 useEventListener(document, "keydown", ({ code }) => {
-  if (
-    ["Enter", "NumpadEnter"].includes(code) &&
-    !disabled.value &&
-    !loading.value
-  )
+  if (["Enter", "NumpadEnter"].includes(code) && !loading.value)
     immediateDebounce(ruleFormRef.value);
 });
+
+// 导航到注册页面
+const goToRegister = () => {
+  router.push("/auth/register");
+};
+
+// 导航到忘记密码页面
+const goToForgotPassword = () => {
+  router.push("/auth/forgot-password");
+};
 </script>
 
 <template>
@@ -126,21 +164,7 @@ useEventListener(document, "keydown", ({ code }) => {
             size="large"
           >
             <Motion :delay="100">
-              <el-form-item
-                :rules="[
-                  {
-                    required: true,
-                    message: '请输入邮箱',
-                    trigger: 'blur'
-                  },
-                  {
-                    type: 'email',
-                    message: '请输入有效的邮箱地址',
-                    trigger: 'blur'
-                  }
-                ]"
-                prop="email"
-              >
+              <el-form-item prop="email">
                 <el-input
                   v-model="ruleForm.email"
                   clearable
@@ -161,11 +185,16 @@ useEventListener(document, "keydown", ({ code }) => {
                 />
               </el-form-item>
             </Motion>
-            
+
             <Motion :delay="200">
               <div class="flex justify-between">
                 <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-                <el-link type="primary" href="#/auth/forgot-password" :underline="false">忘记密码？</el-link>
+                <el-link
+                  type="primary"
+                  :underline="false"
+                  @click="goToForgotPassword"
+                  >忘记密码？</el-link
+                >
               </div>
             </Motion>
 
@@ -175,17 +204,23 @@ useEventListener(document, "keydown", ({ code }) => {
                 size="default"
                 type="primary"
                 :loading="loading"
-                :disabled="disabled"
+                :disabled="loading"
                 @click="onLogin(ruleFormRef)"
               >
                 登录
               </el-button>
             </Motion>
-            
+
             <Motion :delay="300">
               <div class="flex justify-center mt-4">
                 <span class="text-gray-500">还没有账号？</span>
-                <el-link type="primary" href="#/auth/register" :underline="false" class="ml-1">立即注册</el-link>
+                <el-link
+                  type="primary"
+                  :underline="false"
+                  class="ml-1"
+                  @click="goToRegister"
+                  >立即注册</el-link
+                >
               </div>
             </Motion>
           </el-form>

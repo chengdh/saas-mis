@@ -54,7 +54,9 @@ export function getPluginsList(
       compiler: "vue3",
       scale: 1
     }),
-    VITE_CDN ? cdn : null,
+    // 暂时禁用CDN插件，因为它在Docker环境中有vue-demi相关的问题
+    // VITE_CDN ? cdn : null,
+    null, // 替换上面一行
     configCompressPlugin(VITE_COMPRESSION),
     // 线上环境删除console
     removeConsole({ external: ["src/assets/iconfont/iconfont.js"] }),

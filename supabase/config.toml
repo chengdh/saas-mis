@@ -1,0 +1,38 @@
+# 项目ID，可以是任意字符串
+project_id = "saas-mis"
+
+[api]
+# API服务端口
+port = 54321
+# 暴露的数据库模式
+schemas = ["public", "storage", "auth"]
+# 额外的搜索路径
+extra_search_path = ["public", "extensions"]
+# 最大返回行数
+max_rows = 1000
+
+[db]
+# PostgreSQL端口
+port = 5432
+# PostgreSQL主版本
+major_version = 14
+
+[studio]
+# Supabase Studio端口
+port = 3000
+
+[auth]
+# 网站URL，用于认证重定向
+site_url = "http://localhost:3000"
+# 额外的重定向URL
+additional_redirect_urls = ["http://localhost:3000"]
+# JWT过期时间（秒）
+jwt_expiry = 3600
+# 启用刷新令牌轮换
+enable_refresh_token_rotation = true
+# 刷新令牌重用间隔（秒）
+refresh_token_reuse_interval = 10
+
+[storage]
+# 文件上传大小限制
+file_size_limit = "50MiB" 

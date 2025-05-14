@@ -66,11 +66,18 @@ export function useDataThemeChange() {
       setEpThemeColor(getConfig().EpThemeColor);
     } else {
       const colors = themeColors.value.find(v => v.themeColor === theme);
-      setEpThemeColor(colors.color);
+      if (colors) {
+        setEpThemeColor(colors.color);
+      } else {
+        // 如果未找到主题颜色，使用默认颜色
+        setEpThemeColor(getConfig().EpThemeColor);
+      }
     }
   }
 
   function setPropertyPrimary(mode: string, i: number, color: string) {
+    if (!color) return;
+    
     document.documentElement.style.setProperty(
       `--el-color-primary-${mode}-${i}`,
       dataTheme.value ? darken(color, i / 10) : lighten(color, i / 10)

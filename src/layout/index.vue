@@ -31,7 +31,8 @@ import NavVertical from "./components/lay-sidebar/NavVertical.vue";
 import NavHorizontal from "./components/lay-sidebar/NavHorizontal.vue";
 import BackTopIcon from "@/assets/svg/back_top.svg?component";
 
-const appWrapperRef = ref();
+const appWrapperRef = ref(null);
+const mainScrollbarExists = ref(false);
 const { isDark } = useDark();
 const { layout } = useLayout();
 const isMobile = deviceDetection();
@@ -118,6 +119,11 @@ onMounted(() => {
   if (isMobile) {
     toggle("mobile", false);
   }
+  
+  // 检查目标元素是否存在
+  setTimeout(() => {
+    mainScrollbarExists.value = !!document.querySelector('.main-container .el-scrollbar__wrap');
+  }, 200);
 });
 
 onBeforeMount(() => {
@@ -184,10 +190,9 @@ const LayHeader = defineComponent({
         <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
       </div>
-      <el-scrollbar v-else>
+      <el-scrollbar v-else ref="mainScrollbarRef">
         <el-backtop
           title="回到顶部"
-          target=".main-container .el-scrollbar__wrap"
         >
           <BackTopIcon />
         </el-backtop>

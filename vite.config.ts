@@ -8,6 +8,7 @@ import {
   pathResolve,
   __APP_INFO__
 } from "./build/utils";
+import { resolve } from 'path';
 
 export default ({ mode }: ConfigEnv): UserConfigExport => {
   const { VITE_CDN, VITE_PORT, VITE_COMPRESSION, VITE_PUBLIC_PATH } =
@@ -16,7 +17,12 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
     base: VITE_PUBLIC_PATH,
     root,
     resolve: {
-      alias
+      alias: {
+        ...alias,
+        // 添加tippy.js CSS路径别名，解决Docker中找不到文件的问题
+        'tippy.js/dist/tippy.css': resolve(__dirname, 'node_modules/tippy.js/dist/tippy.css'),
+        'tippy.js/themes/light.css': resolve(__dirname, 'node_modules/tippy.js/themes/light.css')
+      }
     },
     // 服务端渲染
     server: {
@@ -36,7 +42,7 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
       },
       hmr: {
         host: 'localhost', // 如果'localhost'无法从浏览器正确解析到容器，则为Docker主机IP
-        port: 3000,
+        port: 8848,
         protocol: 'ws'
       }
     },

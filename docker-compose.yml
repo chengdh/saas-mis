@@ -6,7 +6,6 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - .:/app
-      - /app/node_modules
     ports:
       - "8848:8848"
     environment:
@@ -16,13 +15,14 @@ services:
       - CHOKIDAR_USEPOLLING=true
 
   # 添加一个专门用于运行命令的服务，如添加依赖等
-  npm:
+  pnpm:
     image: node:latest
     volumes:
       - .:/app
-      - npm_cache:/root/.npm
+      - pnpm_cache:/root/.pnpm-store
     working_dir: /app
-    entrypoint: ["npm"]
+    # 先安装pnpm，然后使用pnpm作为入口命令
+    entrypoint: ["/bin/sh", "-c", "npm install -g pnpm && pnpm $0 $@"]
     profiles:
       - tools
 
@@ -40,5 +40,5 @@ services:
     network_mode: "host"
 
 volumes:
-  npm_cache:
-    name: npm-cache
+  pnpm_cache:
+    name: pnpm-cache
