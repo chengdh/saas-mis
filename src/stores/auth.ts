@@ -1,9 +1,16 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { getSupabaseClient, resetSupabaseClient } from "@/utils/supabase";
+import { getSupabaseClient, resetSupabaseClient, supabase } from "@/utils/supabase";
 import type { Session, User, AuthError } from "@supabase/supabase-js";
 import { useUserStoreHook } from "@/store/modules/user";
 import { storageLocal } from "@/store/utils";
+
+// 新增：用户注册接口
+export interface RegisterParams {
+  email: string;
+  password: string;
+  tenantName: string;
+}
 
 export const useAuthStore = defineStore("auth", () => {
   // 状态
@@ -60,6 +67,63 @@ export const useAuthStore = defineStore("auth", () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
+  }
+  
+  // 新增：用户注册函数
+  async function register({ email, password, tenantName }: RegisterParams) {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      // 第一步：创建新租户
+      const { data: tenant, error: tenantError } = await supabase
+        .from('tenants')
+        .insert([{ name: tenantName }])
+        .select()
+        .single();
+      
+      if (tenantError) {
+        error.value = tenantError as unknown as AuthError;
+        return { success: false, error: tenantError };
+      }
+      
+      // 第二步：使用租户ID注册用户
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            tenant_id: tenant.id,
+            role: 'admin', // 第一个注册的用户成为租户管理员
+          },
+          emailRedirectTo: `${window.location.origin}/auth/verify-email`
+        }
+      });
+      
+      if (signUpError) {
+        // 如果用户注册失败，删除已创建的租户
+        await supabase
+          .from('tenants')
+          .delete()
+          .eq('id', tenant.id);
+        
+        error.value = signUpError;
+        return { success: false, error: signUpError };
+      }
+      
+      return { 
+        success: true, 
+        data,
+        message: "注册成功！请查收邮箱并点击验证链接完成注册。"
+      };
+    } catch (err) {
+      console.error("Registration error:", err);
+      const authError = err as AuthError;
+      error.value = authError;
+      return { success: false, error: authError };
+    } finally {
+      isLoading.value = false;
+    }
   }
   
   async function signIn(email: string, password: string, rememberMe: boolean = false) {
@@ -185,51 +249,57 @@ export const useAuthStore = defineStore("auth", () => {
   
   function updateUserStore(user: User) {
     const userStore = useUserStoreHook();
-    userStore.SET_USERNAME(user.email || "");
     
-    // 更新用户信息
-    if (user.user_metadata) {
-      if (user.user_metadata.avatar) {
-        userStore.SET_AVATAR(user.user_metadata.avatar);
-      }
-      if (user.user_metadata.nickname) {
-        userStore.SET_NICKNAME(user.user_metadata.nickname);
-      }
+    // 更新用户名和角色
+    userStore.setUsername(user.email || "");
+    // 设置用户角色，默认为普通用户，如果有角色信息则使用实际角色
+    userStore.setRoles(user.user_metadata?.role ? [user.user_metadata.role] : ['user']);
+    
+    // 存储租户ID
+    if (user.user_metadata?.tenant_id) {
+      userStore.setTenantId(user.user_metadata.tenant_id);
+      // 保存到本地存储，以便在刷新页面后恢复
+      storageLocal().setItem('tenantId', user.user_metadata.tenant_id);
     }
-    
-    // 设置角色
-    const roles = user.app_metadata?.roles || [];
-    userStore.SET_ROLES(roles);
-    
-    // 设置权限
-    const permissions = user.app_metadata?.permissions || [];
-    userStore.SET_PERMS(permissions);
-    
-    // 存储用户信息到本地存储
-    const localUserData = {
-      id: user.id,
-      email: user.email,
-      username: user.email,
-      avatar: user.user_metadata?.avatar || "",
-      nickname: user.user_metadata?.nickname || "",
-      roles: roles,
-      permissions: permissions,
-      tenant_id: user.user_metadata?.tenant_id || null
-    };
-    
-    storageLocal().setItem("user-info", localUserData);
   }
   
   function resetUserStore() {
     const userStore = useUserStoreHook();
     userStore.SET_USERNAME("");
-    userStore.SET_AVATAR("");
-    userStore.SET_NICKNAME("");
     userStore.SET_ROLES([]);
-    userStore.SET_PERMS([]);
+    storageLocal().removeItem('tenantId');
+  }
+  
+  // 重置密码邮件发送
+  async function resetPasswordForEmail(email: string) {
+    isLoading.value = true;
+    error.value = null;
     
-    // 清除本地存储的用户信息
-    storageLocal().removeItem("user-info");
+    try {
+      const supabase = getSupabaseClient();
+      
+      const { data, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`
+      });
+      
+      if (resetError) {
+        error.value = resetError;
+        return { success: false, error: resetError };
+      }
+      
+      return { 
+        success: true, 
+        data,
+        message: "重置密码邮件已发送，请查收邮箱并按照提示操作"
+      };
+    } catch (err) {
+      console.error("发送重置密码邮件错误:", err);
+      const authError = err as AuthError;
+      error.value = authError;
+      return { success: false, error: authError };
+    } finally {
+      isLoading.value = false;
+    }
   }
   
   return {
@@ -241,12 +311,12 @@ export const useAuthStore = defineStore("auth", () => {
     userEmail,
     userTenantId,
     initialize,
+    register,
     signIn,
     signOut,
     isSessionExpired,
     refreshToken,
-    updateUserStore,
-    resetUserStore
+    resetPasswordForEmail
   };
 });
 

@@ -124,6 +124,7 @@ useEventListener(document, "keydown", ({ code }) => {
 
 // 导航到注册页面
 const goToRegister = () => {
+  console.log("尝试导航到注册页面");
   router.push("/auth/register");
 };
 
